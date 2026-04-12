@@ -1,0 +1,38 @@
+package rag.backend.entity;
+
+import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+@Entity
+@Table(name = "chunks")
+@Getter
+@Setter
+@Builder
+public class Chunk {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "document_id", nullable = false)
+    private Document document;
+
+    @Column(name = "vector_id", nullable = false)
+    private String vectorId; // maps to FAISS index
+
+    @Column(name = "chunk_index", nullable = false)
+    private Integer chunkIndex; // order in document
+}
