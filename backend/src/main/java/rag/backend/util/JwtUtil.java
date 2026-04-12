@@ -13,15 +13,20 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
+import rag.backend.repository.BlacklistedTokenRepository;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
 
     @Value("${jwt.secret}")
-    private final String SECRET = "secret-secret-secret-secret-secret-secret"; // min 32 chars
+    private String SECRET = "secret-secret-secret-secret-secret-secret"; // min 32 chars
 
     @Value("${jwt.expiration_in_seconds}")
-    private final long EXPIRATION_IN_SECONDS = 1000 * 60 * 60 * 24; // 24 hours
+    private long EXPIRATION_IN_SECONDS = 1000 * 60 * 60 * 24; // 24 hours
+
+    private final BlacklistedTokenRepository blacklistedTokenRepository;
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
@@ -62,6 +67,10 @@ public class JwtUtil {
     }
 
     public boolean isTokenValid(String token) {
+        if (blacklistedTokenRepository.existsByToken(token)) {
+            return false;
+        }
+
         try {
             extractClaims(token);
             return true;

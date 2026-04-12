@@ -9,7 +9,7 @@ import rag.backend.dto.Dto.QueryResponse;
 import rag.backend.entity.ChatMessage;
 import rag.backend.entity.ChatSession;
 import rag.backend.entity.User;
-import rag.backend.mapper.Mapper.ChatMapper;
+import rag.backend.mapper.Mapper.QueryResponseMapper;
 import rag.backend.repository.ChatMessageRepository;
 
 @Service
@@ -34,6 +34,6 @@ public class ChatMessageService {
 
         chatMessageRepository.save(message);
 
-        return ChatMapper.toResponse(response, sources);
+        return QueryResponseMapper.toResponse(response, sources);
     }
 }

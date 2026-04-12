@@ -29,8 +29,7 @@ public class Mapper {
         }
     }
 
-    // TODO: might not be used so remove
-    public static class ChatMapper {
+    public static class QueryResponseMapper {
 
         public static QueryResponse toResponse(String answer, List<String> sources) {
             return QueryResponse.builder()

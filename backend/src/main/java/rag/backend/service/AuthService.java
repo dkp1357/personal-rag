@@ -1,6 +1,7 @@
 package rag.backend.service;
 
 import java.util.Date;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 import rag.backend.dto.Dto.AuthResponse;
 import rag.backend.dto.Dto.LoginRequest;
+import rag.backend.dto.Dto.AccessTokenRequest;
 import rag.backend.dto.Dto.RegisterRequest;
 import rag.backend.entity.BlacklistedToken;
 import rag.backend.entity.RefreshToken;
@@ -72,13 +74,13 @@ public class AuthService {
     }
 
     // get access (jwt) token from refresh token
-    public String getAccessToken(String refreshTokenString) {
+    public String getNewAccessToken(AccessTokenRequest request) {
 
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenString)
-                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(request.getRefreshToken())
+                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token, please login again"));
 
         if (refreshToken.isRevoked() || refreshToken.getExpiryDate().before(new Date())) {
-            throw new UnauthorizedException("Refresh token expired or revoked");
+            throw new UnauthorizedException("Refresh token expired or revoked, please login again");
         }
 
         User user = userRepository.findById(refreshToken.getUserId())
@@ -109,6 +111,7 @@ public class AuthService {
                 .userId(user.getId())
                 .expiryDate(new Date(System.currentTimeMillis() + (REFRESH_TOKEN_EXPIRATION * 1000)))
                 .revoked(false)
+                .token(UUID.randomUUID().toString())
                 .build();
 
         return refreshTokenRepository.save(token);

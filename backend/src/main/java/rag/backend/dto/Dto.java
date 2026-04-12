@@ -2,6 +2,8 @@ package rag.backend.dto;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -36,9 +38,11 @@ public class Dto {
     @Data
     public static class DocumentRequest {
 
+        @JsonProperty("file_name")
         @NotBlank(message = "File name is required")
         private String fileName;
 
+        @JsonProperty("file_path")
         @NotBlank(message = "File path is required")
         private String filePath;
     }
@@ -49,7 +53,11 @@ public class Dto {
         @NotBlank(message = "Query cannot be empty")
         private String query;
 
-        private String sessionId; // optional
+        @JsonProperty("session_id")
+        private String sessionId; // existing session's id, optional
+
+        @JsonProperty("session_title")
+        private String sessionTitle; // new session's title, optional
     }
 
     @Data
@@ -63,7 +71,17 @@ public class Dto {
     @Data
     @Builder
     public static class AuthResponse {
+        @JsonProperty("access_token")
         private String accessToken;
+
+        @JsonProperty("refresh_token")
+        private String refreshToken;
+    }
+
+    @Data
+    public static class AccessTokenRequest {
+
+        @JsonProperty("refresh_token")
         private String refreshToken;
     }
 }
