@@ -15,7 +15,7 @@ public class RagClientService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("rag_client_base_url")
+    @Value("${rag_client.base_url}")
     private final String BASE_URL = "";
 
     public void processDocument(Document document) {

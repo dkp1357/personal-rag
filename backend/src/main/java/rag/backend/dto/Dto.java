@@ -59,4 +59,11 @@ public class Dto {
         private String answer;
         private List<String> sources;
     }
+
+    @Data
+    @Builder
+    public static class AuthResponse {
+        private String accessToken;
+        private String refreshToken;
+    }
 }
