@@ -11,7 +11,7 @@ import lombok.Data;
 public class Dto {
 
     @Data
-    public static class RegisterRquest {
+    public static class RegisterRequest {
 
         @Email(message = "invalid email format")
         @NotBlank(message = "email is required")

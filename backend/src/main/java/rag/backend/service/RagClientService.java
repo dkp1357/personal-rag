@@ -38,8 +38,8 @@ public class RagClientService {
         return restTemplate.postForObject(url, body, String.class);
     }
 
-    public void deleteDocument(Document document) {
-        String url = BASE_URL + "/delete/" + document.getId().toString();
+    public void deleteDocument(UUID documentID) {
+        String url = BASE_URL + "/delete/" + documentID.toString();
         restTemplate.delete(url);
     }
 }

@@ -10,7 +10,7 @@ public class Mapper {
 
     public static class UserMapper {
 
-        public static User toEntity(RegisterRquest registerRquest) {
+        public static User toEntity(RegisterRequest registerRquest) {
             return User.builder()
                     .email(registerRquest.getEmail())
                     .password(registerRquest.getPassword())
