@@ -9,6 +9,7 @@ dependencies = [
     "fastapi>=0.135.3",
     "langchain>=1.2.15",
     "langchain-community>=0.4.1",
+    "langchain-google-genai>=4.2.1",
     "langchain-openai>=1.1.12",
     "pypdf>=6.10.0",
     "python-multipart>=0.0.26",
