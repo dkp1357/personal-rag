@@ -1,6 +1,7 @@
 package rag.backend.dto;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,7 +22,12 @@ public class ApiResponse<T> {
         return new ApiResponse<>(true, message, data, null, LocalDateTime.now());
     }
 
-    public static <T> ApiResponse<T> failure(String message, Object errors) {
-        return new ApiResponse<>(false, message, null, errors, LocalDateTime.now());
+    public static <T> ApiResponse<T> failure(String message, Map<String, String> errors) {
+        return new ApiResponse<>(
+                false,
+                message,
+                null,
+                errors,
+                LocalDateTime.now());
     }
 }

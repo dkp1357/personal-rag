@@ -2,12 +2,10 @@ package rag.backend.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -15,35 +13,45 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
-@EnableWebSecurity // optional
-@EnableMethodSecurity // for method security
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
+        private final JwtFilter jwtFilter;
+        private final DaoAuthenticationProvider authenticationProvider;
+        private final AuthenticationManager authenticationManager;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                // disable csrf, since we are not using cookies
+                http.csrf(csrf -> csrf.disable())
+                                // configure cors
+                                .cors(cors -> {
+                                })
+                                // stateless session
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // disable csrf
-        http.csrf(csrf -> csrf.disable())
-                // stateless session
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // authorization
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/**").permitAll()
-                        .anyRequest().authenticated())
+                                .authenticationProvider(authenticationProvider)
+                                .authenticationManager(authenticationManager)
 
-                // disable default auth
-                .httpBasic(httpBasic -> httpBasic.disable())
-                .formLogin(form -> form.disable());
+                                // authorization
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/api/auth/**").permitAll()
 
-        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                                                .requestMatchers("/api/admin/**", "/h2-console/**").hasRole("ADMIN")
 
-        return http.build();
-    }
+                                                .requestMatchers(
+                                                                "/v3/api-docs/**",
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html")
+                                                .permitAll()
+
+                                                .anyRequest().authenticated())
+                                // disable default auth
+                                .httpBasic(httpBasic -> httpBasic.disable())
+                                .formLogin(form -> form.disable());
+
+                http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+                return http.build();
+        }
 }

@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import rag.backend.dto.ApiResponse;
 import rag.backend.dto.Dto.AccessTokenRequest;
+import rag.backend.dto.Dto.AccessTokenResponse;
 import rag.backend.dto.Dto.AuthResponse;
 import rag.backend.dto.Dto.LoginRequest;
 import rag.backend.dto.Dto.RegisterRequest;
@@ -45,13 +46,13 @@ public class AuthController {
     }
 
     @PostMapping("new-access-token")
-    public ResponseEntity<ApiResponse<String>> accessToken(
+    public ResponseEntity<ApiResponse<AccessTokenResponse>> accessToken(
             @RequestBody AccessTokenRequest request) {
 
-        String newAccessToken = authService.getNewAccessToken(request);
+        AccessTokenResponse response = authService.getNewAccessToken(request);
 
         return ResponseEntity.ok(
-                ApiResponse.success("access token refreshed", newAccessToken));
+                ApiResponse.success("access token refreshed", response));
     }
 
     @PostMapping("/logout")

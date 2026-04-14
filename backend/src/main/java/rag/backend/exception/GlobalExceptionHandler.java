@@ -45,26 +45,48 @@ public class GlobalExceptionHandler {
     // not found
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFoundException(ResourceNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(ex.getMessage(), ex));
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getClass().getSimpleName());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(ex.getMessage(), error));
     }
 
     // bad request
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(BadRequestException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getClass().getSimpleName());
+
         return ResponseEntity.badRequest().body(
-                ApiResponse.failure(ex.getMessage(), ex));
+                ApiResponse.failure(ex.getMessage(), error));
     }
 
     // unauthorized
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getClass().getSimpleName());
+
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                ApiResponse.failure(ex.getMessage(), ex));
+                ApiResponse.failure(ex.getMessage(), error));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleForbidden(ForbiddenException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getClass().getSimpleName());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                ApiResponse.failure(ex.getMessage(), error));
     }
 
     // rest
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.failure(ex.getMessage(), ex));
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getClass().getSimpleName());
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.failure(ex.getMessage(), error));
     }
 }
