@@ -1,6 +1,12 @@
-def main():
-    print("Hello from fastapi-service!")
+from fastapi import FastAPI
+from routes import embed, query
+
+app = FastAPI()
+
+app.include_router(embed.router)
+app.include_router(query.router)
 
 
-if __name__ == "__main__":
-    main()
+@app.get("/")
+def root():
+    return {"message": "RAG service running"}
