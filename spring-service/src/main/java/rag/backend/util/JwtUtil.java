@@ -24,7 +24,7 @@ public class JwtUtil {
     private String SECRET = "secret-secret-secret-secret-secret-secret"; // min 32 chars
 
     @Value("${jwt.expiration_in_seconds}")
-    private long EXPIRATION_IN_SECONDS = 1000 * 60 * 60 * 24; // 24 hours
+    private long EXPIRATION_IN_SECONDS = 60 * 60 * 24; // 24 hours
 
     private final BlacklistedTokenRepository blacklistedTokenRepository;
 
@@ -34,7 +34,7 @@ public class JwtUtil {
 
     public String generateToken(UUID userId, String email, String role) {
         Date issuedAt = new Date();
-        Date expiresAt = new Date(issuedAt.getTime() + EXPIRATION_IN_SECONDS);
+        Date expiresAt = new Date(issuedAt.getTime() + (EXPIRATION_IN_SECONDS * 1000));
 
         return Jwts.builder()
                 .subject(email)

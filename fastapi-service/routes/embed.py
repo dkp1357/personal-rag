@@ -30,7 +30,7 @@ def embed_document(req: EmbedRequest):
         chunk_id = base_id + i
 
         new_entries.append(
-            {"id": chunk_id, "document_id": req.documentId, "text": chunk}
+            {"id": chunk_id, "document_id": req.document_id, "text": chunk}
         )
 
     index.add(np.array(embeddings))
