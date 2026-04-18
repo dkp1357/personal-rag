@@ -26,6 +26,7 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201")
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
 
