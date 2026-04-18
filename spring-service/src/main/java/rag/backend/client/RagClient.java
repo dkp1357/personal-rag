@@ -31,11 +31,15 @@ public class RagClient {
                                 .block();
         }
 
-        public void deleteDocument(UUID documentId) {
+        public void deleteDocument(UUID userId, UUID documentId) {
                 webClient.delete()
-                                .uri(RAG_BASE_URL + "/document/{id}", documentId)
+                                .uri(uriBuilder -> uriBuilder
+                                                .path(RAG_BASE_URL + "/document")
+                                                .queryParam("user_id", userId.toString())
+                                                .queryParam("document_id", documentId.toString())
+                                                .build())
                                 .retrieve()
-                                .bodyToMono(String.class)
+                                .bodyToMono(Void.class)
                                 .block();
         }
 
