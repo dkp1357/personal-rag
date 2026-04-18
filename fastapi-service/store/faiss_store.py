@@ -16,6 +16,6 @@ def load_or_create_index(user_id):
     path = get_index_path(user_id)
 
     if os.path.exists(path=path):
-        return faiss.read_index(path=path)
+        return faiss.read_index(path)
 
     return faiss.IndexFlatL2(config.VECTOR_DIM)

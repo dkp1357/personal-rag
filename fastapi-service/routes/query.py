@@ -22,9 +22,11 @@ def query_rag(req: QueryRequest):
     sources = set()
 
     for i in indices:
-        if i < len(chunks):
+        if isinstance(i, int) and 0 <= i < len(chunks):
             context_chunks.append(chunks[i]["text"])
             sources.add(chunks[i]["document_id"])
+        else:
+            print(f"Skipping invalid index: {i}")
 
     answer = llm_service.generate(req.query, context_chunks)
 

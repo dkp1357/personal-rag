@@ -33,8 +33,7 @@ public class RagClient {
 
         public void deleteDocument(UUID userId, UUID documentId) {
                 webClient.delete()
-                                .uri(uriBuilder -> uriBuilder
-                                                .path(RAG_BASE_URL + "/document")
+                                .uri(RAG_BASE_URL + "/document", uriBuilder -> uriBuilder
                                                 .queryParam("user_id", userId.toString())
                                                 .queryParam("document_id", documentId.toString())
                                                 .build())

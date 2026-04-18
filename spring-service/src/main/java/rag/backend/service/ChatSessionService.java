@@ -17,23 +17,19 @@ import rag.backend.repository.ChatSessionRepository;
 public class ChatSessionService {
     private final ChatSessionRepository chatSessionRepository;
 
-    public ChatSession getChatSession(User user, QueryRequest request) {
+    public ChatSession getChatSession(User user, QueryRequest req) {
         ChatSession session = null;
 
-        UUID sessionId = UUID.fromString(request.getSessionId());
-        String sessionTitle = request.getSessionTitle();
-        String query = request.getQuery();
-
-        if (sessionId != null) {
+        if (req.getSessionId() != null) {
             // get session if sessionId is given
-            session = this.getChatSessionBySessionId(user, sessionId);
+            session = this.getChatSessionBySessionId(user, UUID.fromString(req.getSessionId()));
         } else {
-            if (sessionTitle != null) {
+            if (req.getSessionTitle() != null) {
                 // create session if sessionId is not given but sessionTitle is there
-                session = this.createSession(user, sessionTitle);
+                session = this.createSession(user, req.getSessionTitle());
             } else {
                 // create session with title
-                session = this.createSession(user, this.generateSessionTitle(query));
+                session = this.createSession(user, this.generateSessionTitle(req.getQuery()));
             }
         }
 
