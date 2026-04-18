@@ -1,11 +1,11 @@
 import json
 import os
 
-from config import DATA_PATH
+from config import config
 
 
 def get_metadata_path(user_id):
-    return os.path.join(DATA_PATH, f"{user_id}_meta.json")
+    return os.path.join(config.DATA_PATH, f"{user_id}_meta.json")
 
 
 def load_metadata(user_id):
