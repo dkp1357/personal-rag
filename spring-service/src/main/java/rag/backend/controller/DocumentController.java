@@ -8,14 +8,13 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import rag.backend.dto.ApiResponse;
-import rag.backend.dto.Dto.DocumentRequest;
 import rag.backend.entity.Document;
 import rag.backend.entity.User;
 import rag.backend.service.DocumentService;
@@ -30,12 +29,11 @@ public class DocumentController {
     private final AuthUtil authUtil;
 
     @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<Document>> upload(
-            @Valid @RequestBody DocumentRequest request) {
+    public ResponseEntity<ApiResponse<?>> upload(@RequestParam("file") MultipartFile file) {
 
         User user = authUtil.getCurrentUser();
 
-        Document document = documentService.upload(request, user);
+        Document document = documentService.upload(file, user);
 
         return ResponseEntity.ok(
                 ApiResponse.success("document uploaded successfully", document));
@@ -52,12 +50,12 @@ public class DocumentController {
                 ApiResponse.success("documents fetched successfully", documents));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteDocument(@PathVariable UUID id) {
+    @DeleteMapping("/{documentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteDocument(@PathVariable UUID documentId) {
 
         User user = authUtil.getCurrentUser();
 
-        documentService.deleteDocument(id, user);
+        documentService.deleteDocument(documentId, user);
 
         return ResponseEntity.ok(ApiResponse.success("document deleted successfully", null));
     }

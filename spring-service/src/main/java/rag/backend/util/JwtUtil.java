@@ -21,10 +21,10 @@ import rag.backend.repository.BlacklistedTokenRepository;
 public class JwtUtil {
 
     @Value("${jwt.secret}")
-    private String SECRET = "secret-secret-secret-secret-secret-secret"; // min 32 chars
+    private static String SECRET = "secret-secret-secret-secret-secret-secret"; // min 32 chars
 
     @Value("${jwt.expiration_in_seconds}")
-    private long EXPIRATION_IN_SECONDS = 1000 * 60 * 60 * 24; // 24 hours
+    private static long EXPIRATION_IN_SECONDS = 1000 * 60 * 60 * 24; // 24 hours
 
     private final BlacklistedTokenRepository blacklistedTokenRepository;
 

@@ -21,10 +21,10 @@ public class DataInitializer {
     private final PasswordEncoder passwordEncoder;
 
     @Value("${app.admin.email}")
-    private String adminEmail;
+    private static String adminEmail;
 
     @Value("${app.admin.password}")
-    private String adminPassword;
+    private static String adminPassword;
 
     @Bean
     public CommandLineRunner createAdmin() {
