@@ -34,20 +34,7 @@ public class ChatController {
 
         String query = request.getQuery();
 
-        ChatSession session = null;
-
-        if (request.getSessionId() != null) {
-            // get session if sessionId is given
-            session = chatSessionService.getChatSessionBySessionId(user, request.getSessionId());
-        } else {
-            if (request.getSessionTitle() != null) {
-                // create session if sessionId is not given but sessionTitle is there
-                session = chatSessionService.createSession(user, request.getSessionTitle());
-            } else {
-                // create session with title as empty string if both are not given
-                session = chatSessionService.createSession(user, "");
-            }
-        }
+        ChatSession session = chatSessionService.getChatSession(user, request);
 
         QueryResponse response = chatMessageService.handleQuery(user, session, query);
 

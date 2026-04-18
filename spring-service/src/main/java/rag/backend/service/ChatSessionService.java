@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
+import rag.backend.dto.Dto.QueryRequest;
 import rag.backend.entity.ChatSession;
 import rag.backend.entity.User;
 import rag.backend.exception.CustomException.ResourceNotFoundException;
@@ -15,6 +16,29 @@ import rag.backend.repository.ChatSessionRepository;
 @RequiredArgsConstructor
 public class ChatSessionService {
     private final ChatSessionRepository chatSessionRepository;
+
+    public ChatSession getChatSession(User user, QueryRequest request) {
+        ChatSession session = null;
+
+        UUID sessionId = UUID.fromString(request.getSessionId());
+        String sessionTitle = request.getSessionTitle();
+        String query = request.getQuery();
+
+        if (sessionId != null) {
+            // get session if sessionId is given
+            session = this.getChatSessionBySessionId(user, sessionId);
+        } else {
+            if (sessionTitle != null) {
+                // create session if sessionId is not given but sessionTitle is there
+                session = this.createSession(user, sessionTitle);
+            } else {
+                // create session with title
+                session = this.createSession(user, this.generateSessionTitle(query));
+            }
+        }
+
+        return session;
+    }
 
     public ChatSession createSession(User user, String title) {
         ChatSession chatSession = ChatSession.builder()
@@ -33,9 +57,9 @@ public class ChatSessionService {
         return chatSessionRepository.findByUserOrderByCreatedAtAsc(user);
     }
 
-    public ChatSession getChatSessionBySessionId(User user, String sessionId) {
+    public ChatSession getChatSessionBySessionId(User user, UUID sessionId) {
         // find session by sessionId
-        ChatSession session = chatSessionRepository.findById(UUID.fromString(sessionId))
+        ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("session not found"));
 
         // check if session belongs to user
@@ -44,5 +68,19 @@ public class ChatSessionService {
         }
 
         return session;
+    }
+
+    private String generateSessionTitle(String query) {
+        if (query == null || query.isBlank()) {
+            return "New Chat";
+        }
+
+        String trimmed = query.trim();
+
+        if (trimmed.length() > 40) {
+            trimmed = trimmed.substring(0, 37) + "...";
+        }
+
+        return trimmed;
     }
 }
