@@ -32,7 +32,7 @@ import rag.backend.util.JwtUtil;
 public class AuthService {
 
         @Value("${refresh_token.expiration}")
-        private static long REFRESH_TOKEN_EXPIRATION = 7L * 24 * 60 * 60; // 7 days in seconds
+        private long REFRESH_TOKEN_EXPIRATION = 7L * 24 * 60 * 60; // 7 days in seconds
 
         private final UserRepository userRepository;
         private final RefreshTokenRepository refreshTokenRepository;

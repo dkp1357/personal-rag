@@ -25,7 +25,7 @@ public class DocumentService {
     private final RagClient ragClient;
 
     @Value("${app.upload_dir}")
-    private static String UPLOAD_DIR = "../uploads/";
+    private String UPLOAD_DIR = "../uploads/";
 
     public Document upload(MultipartFile file, User user) {
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
