@@ -80,6 +80,6 @@ public class DocumentService {
         file.delete();
 
         documentRepository.delete(document);
-        ragClient.deleteDocument(documentId);
+        ragClient.deleteDocument(user.getId(), documentId);
     }
 }
