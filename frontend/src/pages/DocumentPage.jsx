@@ -1,147 +1,123 @@
-import React, { useState, useEffect } from 'react';
-import api from '../api/api';
-import { Upload, File, Trash2, Loader2, Plus, CheckCircle, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import { getDocuments, uploadDocument, deleteDocument } from "../api/documents";
+import { useToast } from "../context/ToastContext";
 
-const DocumentPage = () => {
-  const [documents, setDocuments] = useState([]);
+export default function DocumentPage() {
+  const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [file, setFile] = useState(null);
-  const [message, setMessage] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileRef = useRef(null);
+  const toast = useToast();
 
-  const fetchDocuments = async () => {
+  const fetchDocs = async () => {
     try {
-      const response = await api.get('/documents');
-      setDocuments(response.data.data);
-    } catch (err) {
-      console.error('Failed to fetch documents', err);
+      const { data } = await getDocuments();
+      setDocs(data.data || []);
+    } catch {
+      toast("Failed to load documents", "error");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDocuments();
+    fetchDocs();
   }, []);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
+  const handleUpload = async (file) => {
     if (!file) return;
-
     setUploading(true);
-    setMessage(null);
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      await api.post('/documents/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setMessage({ type: 'success', text: 'Document uploaded successfully!' });
-      setFile(null);
-      // Reset input
-      e.target.reset();
-      fetchDocuments();
+      await uploadDocument(file);
+      toast("Document uploaded");
+      await fetchDocs();
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Upload failed.' });
+      toast(err.response?.data?.message || "Upload failed", "error");
     } finally {
       setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
     try {
-      await api.delete(`/documents/${id}`);
-      setDocuments(documents.filter(doc => doc.id !== id));
-    } catch (err) {
-      console.error('Failed to delete document', err);
+      await deleteDocument(id);
+      setDocs((prev) => prev.filter((d) => d.id !== id));
+      toast("Document deleted");
+    } catch {
+      toast("Delete failed", "error");
     }
   };
 
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleUpload(file);
+  };
+
   return (
-    <div className="container mx-auto p-4 md:p-8 max-w-4xl">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div className="page-container">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold">My Documents</h1>
-          <p className="text-base-content/60">Upload and manage documents for your RAG system</p>
+          <h1 className="page-title">Documents</h1>
+          <p className="page-description">Upload files to build your knowledge base</p>
         </div>
       </div>
 
-      <div className="card bg-base-100 shadow-xl mb-8">
-        <div className="card-body">
-          <h2 className="card-title mb-4">Upload New Document</h2>
-          <form onSubmit={handleUpload} className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="form-control w-full">
-              <input 
-                type="file" 
-                className="file-input file-input-bordered w-full" 
-                onChange={handleFileChange}
-                accept=".pdf,.txt,.docx"
-                required
-              />
-            </div>
-            <button 
-              type="submit" 
-              className={`btn btn-primary min-w-[120px] ${uploading ? 'loading' : ''}`}
-              disabled={uploading || !file}
-            >
-              {uploading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
-              Upload
-            </button>
-          </form>
-          {message && (
-            <div className={`alert ${message.type === 'success' ? 'alert-success' : 'alert-error'} mt-4 py-2`}>
-              {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-              <span>{message.text}</span>
-            </div>
-          )}
-        </div>
+      <div
+        className={`upload-zone ${dragOver ? "drag-over" : ""}`}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        onClick={() => fileRef.current?.click()}
+      >
+        <input
+          ref={fileRef}
+          type="file"
+          onChange={(e) => handleUpload(e.target.files?.[0])}
+          tabIndex={-1}
+        />
+        <svg className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+        <p className="upload-text">
+          {uploading ? "Uploading…" : <><strong>Click to upload</strong> or drag & drop</>}
+        </p>
       </div>
 
-      <div className="grid gap-4">
-        {loading ? (
-          <div className="flex justify-center p-12">
-            <Loader2 className="animate-spin text-primary" size={40} />
-          </div>
-        ) : documents.length === 0 ? (
-          <div className="text-center p-12 bg-base-200 rounded-xl border-2 border-dashed border-base-300">
-            <File className="mx-auto mb-4 text-base-content/20" size={48} />
-            <p className="text-xl font-medium">No documents yet</p>
-            <p className="text-base-content/50">Upload a PDF or text file to get started</p>
-          </div>
-        ) : (
-          documents.map((doc) => (
-            <div key={doc.id} className="card bg-base-100 shadow-md hover:shadow-lg transition-shadow border border-base-200">
-              <div className="card-body p-4 flex-row items-center justify-between">
-                <div className="flex items-center gap-4 overflow-hidden">
-                  <div className="w-10 h-10 bg-primary/10 text-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                    <File size={20} />
-                  </div>
-                  <div className="overflow-hidden">
-                    <h3 className="font-semibold truncate">{doc.name}</h3>
-                    <p className="text-xs text-base-content/50">Uploaded: {new Date(doc.createdAt).toLocaleDateString()}</p>
+      {loading ? (
+        <div className="doc-empty"><span className="spinner" /></div>
+      ) : docs.length === 0 ? (
+        <div className="doc-empty">No documents yet — upload one above</div>
+      ) : (
+        <div className="doc-list">
+          {docs.map((doc) => (
+            <div className="doc-item" key={doc.id}>
+              <div className="doc-info">
+                <div className="doc-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="doc-name">{doc.fileName || doc.file_name || doc.name}</div>
+                  <div className="doc-meta">
+                    {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : ""}
                   </div>
                 </div>
-                <button 
-                  onClick={() => handleDelete(doc.id)} 
-                  className="btn btn-ghost btn-circle btn-sm text-error hover:bg-error/10"
-                >
-                  <Trash2 size={18} />
-                </button>
               </div>
+              <button className="btn btn-danger btn-sm" onClick={() => handleDelete(doc.id)}>
+                Delete
+              </button>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-};
-
-export default DocumentPage;
+}

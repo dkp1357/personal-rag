@@ -1,56 +1,58 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Navbar from './components/Navbar';
-import ChatPage from './pages/ChatPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DocumentPage from './pages/DocumentPage';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
+import Navbar from "./components/Navbar";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import ChatPage from "./pages/ChatPage";
+import DocumentPage from "./pages/DocumentPage";
+import "./App.css";
 
-const PrivateRoute = ({ children }) => {
+function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  
-  if (loading) return (
-    <div className="h-screen w-screen flex items-center justify-center">
-      <span className="loading loading-spinner loading-lg text-primary"></span>
-    </div>
-  );
-  
-  return user ? children : <Navigate to="/login" />;
-};
 
-function App() {
+  if (loading) {
+    return <div className="loading-page"><span className="spinner" /></div>;
+  }
+
+  return user ? children : <Navigate to="/login" replace />;
+}
+
+function GuestRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="loading-page"><span className="spinner" /></div>;
+  }
+
+  return user ? <Navigate to="/chat" replace /> : children;
+}
+
+function AppRoutes() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-base-100 flex flex-col">
-          <Navbar />
-          <main className="flex-1 overflow-hidden">
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route 
-                path="/" 
-                element={
-                  <PrivateRoute>
-                    <ChatPage />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/documents" 
-                element={
-                  <PrivateRoute>
-                    <DocumentPage />
-                  </PrivateRoute>
-                } 
-              />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </AuthProvider>
+    <div className="app-layout">
+      <Navbar />
+      <main className="app-main">
+        <Routes>
+          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+          <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+          <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+          <Route path="/documents" element={<ProtectedRoute><DocumentPage /></ProtectedRoute>} />
+          <Route path="*" element={<Navigate to="/chat" replace />} />
+        </Routes>
+      </main>
+    </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}

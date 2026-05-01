@@ -1,52 +1,47 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import api from '../api/api';
+import { createContext, useContext, useState, useEffect } from "react";
+import * as authApi from "../api/auth";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("access_token");
     if (token) {
-      // In a real app, we might verify the token here
       setUser({ token });
     }
     setLoading(false);
   }, []);
 
-  const login = async (username, password) => {
-    const response = await api.post('/auth/login', { username, password });
-    const { accessToken, refreshToken, user: userData } = response.data.data;
-    localStorage.setItem('token', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    setUser(userData || { token: accessToken });
-    return response.data;
+  const login = async (email, password) => {
+    const { data } = await authApi.login(email, password);
+    const { access_token, refresh_token } = data.data;
+    localStorage.setItem("access_token", access_token);
+    localStorage.setItem("refresh_token", refresh_token);
+    setUser({ token: access_token });
   };
 
-  const register = async (username, email, password) => {
-    const response = await api.post('/auth/register', { username, email, password });
-    return response.data;
+  const register = async (email, password) => {
+    await authApi.register(email, password);
   };
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout');
-    } catch (e) {
-      console.error("Logout failed", e);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      setUser(null);
+      await authApi.logout();
+    } catch {
+      // ignore logout errors
     }
+    localStorage.clear();
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
 export const useAuth = () => useContext(AuthContext);

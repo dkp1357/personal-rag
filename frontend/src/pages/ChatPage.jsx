@@ -1,190 +1,162 @@
-import React, { useState, useEffect, useRef } from 'react';
-import api from '../api/api';
-import { Send, Bot, User, Loader2, Plus, MessageSquare, History, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import { getSessions } from "../api/chat";
+import { sendQuery } from "../api/chat";
+import { useToast } from "../context/ToastContext";
 
-const ChatPage = () => {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
+export default function ChatPage() {
   const [sessions, setSessions] = useState([]);
-  const [currentSessionId, setCurrentSessionId] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [sessionsLoading, setSessionsLoading] = useState(true);
-  const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const [activeSession, setActiveSession] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const messagesEnd = useRef(null);
+  const toast = useToast();
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    fetchSessions();
+    getSessions()
+      .then(({ data }) => setSessions(data.data || []))
+      .catch(() => {});
   }, []);
 
-  const fetchSessions = async () => {
-    try {
-      const response = await api.get('/sessions');
-      setSessions(response.data.data);
-    } catch (err) {
-      console.error('Failed to fetch sessions', err);
-    } finally {
-      setSessionsLoading(false);
-    }
-  };
-
-  const createNewSession = () => {
-    setCurrentSessionId(null);
-    setMessages([]);
-  };
+  useEffect(() => {
+    messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || loading) return;
+    const query = input.trim();
+    if (!query || sending) return;
 
-    const userMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setLoading(true);
+    const userMsg = { role: "user", content: query };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setSending(true);
 
     try {
-      const response = await api.post('/chat/query', {
-        query: input,
-        sessionId: currentSessionId
-      });
+      const payload = { query };
 
-      const { answer, sessionId } = response.data.data;
-      
-      setMessages(prev => [...prev, { role: 'bot', content: answer }]);
-      
-      if (!currentSessionId) {
-        setCurrentSessionId(sessionId);
-        fetchSessions();
+      if (activeSession) {
+        payload.session_id = activeSession.id;
+      } else {
+        payload.session_title = query.slice(0, 50);
+      }
+
+      const { data } = await sendQuery(payload);
+      const result = data.data;
+
+      const assistantMsg = {
+        role: "assistant",
+        content: result.answer,
+        sources: result.sources || [],
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+
+      // refresh sessions to pick up new one
+      if (!activeSession) {
+        const { data: sessData } = await getSessions();
+        const refreshed = sessData.data || [];
+        setSessions(refreshed);
+        if (refreshed.length > 0) {
+          setActiveSession(refreshed[refreshed.length - 1]);
+        }
       }
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', content: 'Sorry, I encountered an error. Please try again.' }]);
+      toast(err.response?.data?.message || "Query failed", "error");
+      setMessages((prev) => prev.slice(0, -1)); // remove user msg on error
     } finally {
-      setLoading(false);
+      setSending(false);
     }
   };
 
+  const selectSession = (session) => {
+    setActiveSession(session);
+    setMessages([]);
+  };
+
+  const startNewChat = () => {
+    setActiveSession(null);
+    setMessages([]);
+    setInput("");
+  };
+
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-64 bg-base-200 border-r border-base-300 hidden md:flex flex-col">
-        <div className="p-4">
-          <button 
-            onClick={createNewSession}
-            className="btn btn-primary w-full gap-2"
-          >
-            <Plus size={18} /> New Chat
+    <div className="chat-layout">
+      {/* sidebar */}
+      <aside className="chat-sidebar">
+        <div className="sidebar-header">
+          <button className="btn btn-ghost" onClick={startNewChat}>
+            + New chat
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          <div className="px-2 py-1 text-xs font-bold text-base-content/50 uppercase tracking-wider">Recent Chats</div>
-          {sessionsLoading ? (
-            <div className="flex justify-center p-4"><Loader2 className="animate-spin text-primary" size={24} /></div>
-          ) : sessions.map((session) => (
+        <div className="session-list">
+          {sessions.map((s) => (
             <button
-              key={session.id}
-              onClick={() => {
-                setCurrentSessionId(session.id);
-                // In a real app, you'd fetch history for this session
-                setMessages([]); 
-              }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-3 transition-colors ${currentSessionId === session.id ? 'bg-primary text-primary-content' : 'hover:bg-base-300'}`}
+              key={s.id}
+              className={`session-item ${activeSession?.id === s.id ? "active" : ""}`}
+              onClick={() => selectSession(s)}
             >
-              <MessageSquare size={16} />
-              <span className="truncate">{session.title}</span>
+              {s.title || "Untitled"}
             </button>
           ))}
         </div>
-      </div>
+      </aside>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-base-100 relative">
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8">
-              <div className="w-20 h-20 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mb-6">
-                <Bot size={40} />
-              </div>
-              <h1 className="text-4xl font-bold mb-4">How can I help you?</h1>
-              <p className="text-base-content/60 max-w-md">
-                Ask me anything about your uploaded documents. I'll use RAG to provide accurate answers.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12 w-full max-w-2xl">
-                {['Summarize my documents', 'What are the key findings?', 'Find specific details', 'Analyze trends'].map((suggestion) => (
-                  <button 
-                    key={suggestion}
-                    onClick={() => setInput(suggestion)}
-                    className="btn btn-outline btn-sm normal-case justify-start h-auto py-3 px-4"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            messages.map((msg, i) => (
-              <div key={i} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {msg.role === 'bot' && (
-                  <div className="w-8 h-8 rounded-lg bg-primary text-primary-content flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot size={18} />
+      {/* main */}
+      <div className="chat-main">
+        {messages.length === 0 ? (
+          <div className="chat-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <h3>Ask anything</h3>
+            <p>Query your uploaded documents using natural language</p>
+          </div>
+        ) : (
+          <div className="chat-messages">
+            {messages.map((msg, i) => (
+              <div key={i} className={`message ${msg.role}`}>
+                <div className="message-bubble">{msg.content}</div>
+                {msg.sources?.length > 0 && (
+                  <div className="message-sources">
+                    {msg.sources.map((s, j) => (
+                      <span key={j} className="source-tag">{s}</span>
+                    ))}
                   </div>
                 )}
-                <div className={`max-w-[80%] p-4 rounded-2xl ${msg.role === 'user' ? 'bg-primary text-primary-content rounded-tr-none' : 'bg-base-200 rounded-tl-none border border-base-300'}`}>
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            ))}
+            {sending && (
+              <div className="message assistant">
+                <div className="message-bubble">
+                  <span className="spinner" />
                 </div>
-                {msg.role === 'user' && (
-                  <div className="w-8 h-8 rounded-lg bg-neutral text-neutral-content flex items-center justify-center flex-shrink-0 mt-1">
-                    <User size={18} />
-                  </div>
-                )}
               </div>
-            ))
-          )}
-          {loading && (
-            <div className="flex gap-4 justify-start">
-              <div className="w-8 h-8 rounded-lg bg-primary text-primary-content flex items-center justify-center flex-shrink-0 mt-1">
-                <Bot size={18} />
-              </div>
-              <div className="bg-base-200 p-4 rounded-2xl rounded-tl-none border border-base-300 flex items-center gap-2">
-                <span className="loading loading-dots loading-sm"></span>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+            )}
+            <div ref={messagesEnd} />
+          </div>
+        )}
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-base-300 bg-base-100/80 backdrop-blur-sm">
-          <form onSubmit={handleSend} className="max-w-4xl mx-auto flex gap-2">
+        <form className="chat-input-bar" onSubmit={handleSend}>
+          <div className="chat-input-wrapper">
             <input
+              className="chat-input"
               type="text"
-              placeholder="Ask a question..."
-              className="input input-bordered flex-1 focus:outline-primary"
+              placeholder="Type your question…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={loading}
+              disabled={sending}
+              autoFocus
             />
-            <button 
-              type="submit" 
-              className="btn btn-primary btn-square"
-              disabled={loading || !input.trim()}
-            >
-              <Send size={20} />
+            <button className="btn btn-primary" type="submit" disabled={sending || !input.trim()}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
             </button>
-          </form>
-          <p className="text-[10px] text-center mt-2 text-base-content/40 uppercase tracking-widest font-bold">
-            Personal RAG Assistant • AI can make mistakes
-          </p>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );
-};
-
-export default ChatPage;
+}
