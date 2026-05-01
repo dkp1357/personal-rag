@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import jakarta.validation.ConstraintViolationException;
 import rag.backend.dto.ApiResponse;
 import rag.backend.exception.CustomException.*;
@@ -78,6 +79,17 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                 ApiResponse.failure(ex.getMessage(), error));
+    }
+
+    // rate limit exceeded
+    @ExceptionHandler(RequestNotPermitted.class)
+    public ResponseEntity<ApiResponse<Void>> handleRateLimitExceeded(RequestNotPermitted ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getClass().getSimpleName());
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", "1")
+                .body(ApiResponse.failure("rate limit exceeded, please try again later", error));
     }
 
     // rest
